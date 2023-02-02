@@ -8,7 +8,9 @@
 (function (window) {
 
   var jetzt  = window.jetzt
-    , H      = jetzt.helpers;
+    , H      = jetzt.helpers
+    , selecting = false
+    , immediate = false ;
 
   function on (event, cb) {
     window.addEventListener(event, cb);
@@ -22,6 +24,7 @@
    * Begin interactive dom node selection.
    */
   function selectMode () {
+    selecting = true;
     var selection = [];
     var previousElement = null;
 
@@ -101,6 +104,8 @@
     };
 
     var stop = function () {
+      selecting = false;
+      immediate = false;
       jetzt.view.removeAllOverlays();
       off("mouseover", mouseoverHandler);
       off("mousemove", moveHandler);
@@ -118,9 +123,13 @@
       previousElement = ev.target;
 
       if (ev.altKey) {
-        setSelection([ev.target]);
+        setSelection(selectSiblings(ev.target));      
       } else {
-        setSelection(selectSiblings(ev.target));
+        setSelection([ev.target]);
+        //console.log(ev.target)
+        if(immediate && ev.target.tagName == "DIV") {
+          clickHandler(ev)
+        }
       }
     };
 
@@ -137,6 +146,7 @@
     var keydownHandler = function (ev) {
       if (ev.keyCode === 27) {
         stop();
+        selectMode();
       } else if (ev.altKey && selection.length > 1) {
         setSelection([selection[0]]);
       }
@@ -168,6 +178,13 @@
     } else {
       selectMode();
     }
+    on("contextmenu", function(ev) {
+      if(!selecting) {
+        ev.preventDefault()
+        immediate = true
+        selectMode()
+      }
+    })
   };
 
 })(this);
